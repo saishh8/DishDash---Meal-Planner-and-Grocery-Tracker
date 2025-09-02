@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException ,Depends
 from ..db.models import UserModel,GetUser,GetAllUsers,CreateUserSchema,UpdateSchema
-from ..db.session import Session,get_session
+from ..db.session import get_session
 from sqlmodel import Session, select
 from ..helpers.security import hash_password,verify_password,create_access_token
 
@@ -20,7 +20,7 @@ async def register(user:CreateUserSchema,session: Session = Depends(get_session)
 
     user = UserModel(
         email = user.email,
-        password = hash_password(user.password)
+        hashed_password = hash_password(user.password)
     )
 
     session.add(user)
@@ -38,7 +38,7 @@ async def login(user:CreateUserSchema, session:Session = Depends(get_session)):
         select(UserModel).where(UserModel.email == user.email)
     ).first()
 
-    if not user or verify_password(user.password,db_user.hashed_password):
+    if not user or not verify_password(user.password,db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
 

@@ -1,11 +1,20 @@
 from fastapi import FastAPI
 from .api.auth_routes import router as auth_router
+from contextlib import asynccontextmanager
+from .db.session import init_db
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # before app startup
+    init_db()
+    yield
 
 
 app = FastAPI(
     title = "auth-service",
     version = "1.0.0",
-    description = "Authentication microservice with FastAPI"
+    description = "Authentication microservice with FastAPI",
+    lifespan=lifespan
 
 )
 

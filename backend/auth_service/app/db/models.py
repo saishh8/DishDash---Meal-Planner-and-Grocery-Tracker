@@ -18,7 +18,7 @@ class UserModel(SQLModel,table =True):
                                 sa_type=DateTime(timezone=True),
                                 nullable=False)
     
-    updated: datetime = Field(default_factory=get_utc_now,
+    updated_at: datetime = Field(default_factory=get_utc_now,
                                 sa_type=DateTime(timezone=True),
                                 nullable=False)
 
