@@ -1,0 +1,60 @@
+# -----------------
+# Python
+# -----------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+
+# -----------------
+# Notebooks
+# -----------------
+.ipynb_checkpoints/
+
+# -----------------
+# IDE / Editor
+# -----------------
+.vscode/
+.idea/
+
+# -----------------
+# Testing / Coverage
+# -----------------
+.coverage
+htmlcov/
+.cache/
+.pytest_cache/
+
+# -----------------
+# Build / Packaging
+# -----------------
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# -----------------
+# Docker / Logs
+# -----------------
+*.log
+*.pid
+
+# -----------------
+# OS junk files
+# -----------------
+.DS_Store
+Thumbs.db
+
+# -----------------
+# Project-specific
+# -----------------
+notes.txt
