@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Database
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - mealplanner_net
+
+  # Auth Service
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${AUTH_SERVICE_PORT}:8000"
+    volumes:
+      - ./auth_service/app:/app/app
+      - ./.env:/app/.env  # ← ADD THIS LINE
+    command: >
+      sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - mealplanner_net
+
+  # Meal Service
+  meal_service:
+    build: ./meal_service
+    container_name: meal_service
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${MEAL_SERVICE_PORT}:8001"
+    volumes:
+      - ./meal_service/app:/app/app
+      - ./.env:/app/.env  # ← ADD THIS LINE
+    command: >
+      sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+    networks:
+      - mealplanner_net
+
+volumes:
+  pgdata:
+
+networks:
+  mealplanner_net:
+    driver: bridge
