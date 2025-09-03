@@ -1,10 +1,15 @@
-from fastapi import APIRouter, HTTPException ,Depends
+from fastapi import APIRouter, HTTPException ,Depends, status
 from ..db.models import UserModel,GetUser,GetAllUsers,CreateUserSchema,UpdateSchema
 from ..db.session import get_session
 from sqlmodel import Session, select
-from ..helpers.security import hash_password,verify_password,create_access_token
+from ..helpers.security import hash_password,verify_password,create_access_token,decode_access_token
+from jose import jwt, JWTError
+
 
 router = APIRouter()
+
+
+
 
 
 @router.post('/register',response_model = GetUser)
@@ -44,6 +49,33 @@ async def login(user:CreateUserSchema, session:Session = Depends(get_session)):
 
     access_token = create_access_token(data={"sub":str(db_user.id)})
     return {"access_token":access_token,"token_type":"bearer"}
+
+
+
+def get_current_user(token:str, session: Session) -> UserModel:
+
+
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user_id: str = payload.get("sub")
+
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user = session.get(UserModel, int(user_id))
+    if user is None:
+         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    return user
+
+
+
+@router.get('/me',response_model=GetUser)
+async def fetch_user(token:str, session:Session = Depends(get_session)):
+
+    user = get_current_user(token,session)
+    return user
 
 
 
