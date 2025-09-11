@@ -37,7 +37,7 @@ services:
       - "${AUTH_SERVICE_PORT}:8000"
     volumes:
       - ./auth_service/app:/app/app
-      - ./.env:/app/.env  # ← ADD THIS LINE
+      - ./.env:/app/.env  
     command: >
       sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     networks:
@@ -58,7 +58,7 @@ services:
       - "${MEAL_SERVICE_PORT}:8001"
     volumes:
       - ./meal_service/app:/app/app
-      - ./.env:/app/.env  # ← ADD THIS LINE
+      - ./.env:/app/.env  
     command: >
       sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
     networks:
