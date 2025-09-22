@@ -9,7 +9,7 @@ def get_utc_now():
 
 
 ### MODELS
-def MealModel(SQLModel, table = True):
+class MealModel(SQLModel, table = True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int
@@ -21,7 +21,7 @@ def MealModel(SQLModel, table = True):
     updated_at: datetime = Field(default_factory=get_utc_now, sa_type=DateTime(timezone=True))
 
 
-def RecipeModel(SQLModel, table = True):
+class RecipeModel(SQLModel, table = True):
     id: Optional[int] = Field(default=None, primary_key=True)
     meal_id: int = Field(foreign_key="mealmodel.id")
 
@@ -35,7 +35,7 @@ def RecipeModel(SQLModel, table = True):
 
 ##SCHEMAS
 
-def CreateMeal(SQLModel):
+class CreateMeal(SQLModel):
 
     
     user_id: int
@@ -43,13 +43,13 @@ def CreateMeal(SQLModel):
     date: Optional[datetime] = None
 
 
-def UpdateMeal(SQLModel):
+class UpdateMeal(SQLModel):
 
     name: Optional[str]
     date: Optional[datetime] = None
 
 
-def GetMeal(SQLModel):
+class GetMeal(SQLModel):
 
     id: int
     user_id: int
@@ -60,7 +60,7 @@ def GetMeal(SQLModel):
 
 
 
-def CreateRecipe(SQLModel):
+class CreateRecipe(SQLModel):
 
     meal_id:int
     title:str
@@ -68,14 +68,14 @@ def CreateRecipe(SQLModel):
     calories: Optional[float] = None
 
 
-def UpdateRecipe(SQLModel):
+class UpdateRecipe(SQLModel):
 
     title: Optional[str] = None
     instructions: Optional[str] = None
     calories: Optional[float] = None
 
 
-def GetRecipe(SQLModel):
+class GetRecipe(SQLModel):
 
     id: int
     meal_id:int
