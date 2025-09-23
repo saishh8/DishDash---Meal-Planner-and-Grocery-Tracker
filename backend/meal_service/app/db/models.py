@@ -62,7 +62,7 @@ class GetMeal(SQLModel):
 
 class CreateRecipe(SQLModel):
 
-    meal_id:int
+    
     title:str
     instructions: Optional[str] = None
     calories: Optional[float] = None
