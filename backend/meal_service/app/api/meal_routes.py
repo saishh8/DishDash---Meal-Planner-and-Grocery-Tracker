@@ -1,7 +1,7 @@
 from fastapi import APIRouter,Depends, HTTPException, Header
 from typing import List
 from sqlmodel import Session, select
-from ..db.models import MealModel,RecipeModel,CreateMeal,UpdateMeal,GetMeal,CreateRecipe,GetRecipe,UpdateRecipe,get_utc_now
+from ..db.models import MealRecipeLink,MealModel,RecipeModel,CreateMeal,UpdateMeal,GetMeal,CreateRecipe,GetRecipe,UpdateRecipe,get_utc_now
 from ..db.session import get_session
 import httpx
 from ..helpers.security import verify_user
@@ -130,17 +130,14 @@ async def create_recipe(meal_id:int, recipe:CreateRecipe, session: Session = Dep
 
     user_id = await verify_user(authorization)
 
-    meal = session.exec(
-        select(MealModel).where(MealModel.id == meal_id, MealModel.user_id == user_id)
-    ).first()
+    meal = session.get(MealModel, meal_id)
 
-    if not meal:
+    if not meal or meal.user_id != user_id:
         raise HTTPException(status_code=404, detail="Meal not found or not yours")
 
 
     new_recipe = RecipeModel(
 
-        meal_id=meal.id,
         title=recipe.title,
         instructions=recipe.instructions,
         calories = recipe.calories
@@ -150,24 +147,31 @@ async def create_recipe(meal_id:int, recipe:CreateRecipe, session: Session = Dep
     session.add(new_recipe)
     session.commit()
     session.refresh(new_recipe)
+
+    link = MealRecipeLink(meal_id=meal.id,recipe_id=new_recipe.id)
+    session.add(link)
+    session.commit()
+    
     
     return new_recipe
 
 
 
 
-# Fetch a recipe for a meal belong to a user
+# Fetch a recipe for a meal (many to many)
 @router.get("/{meal_id}/recipe/{recipe_id}", response_model=GetRecipe)
 async def get_recipe(meal_id:int, recipe_id: int,session: Session = Depends(get_session),authorization: str = Header(...)):
 
    
     user_id = await verify_user(authorization)
 
-  
     recipe = session.get(RecipeModel, recipe_id)
     
-    if not recipe or recipe.meal_id != meal_id or recipe.meal.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Recipe not found or not yours")
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    if not any(meal.id == meal_id and meal.user_id == user_id for meal in recipe.meals):
+        raise HTTPException(status_code=404, detail= "Recipe not found or not yours")
 
     return recipe
 
@@ -191,9 +195,12 @@ async def get_all_recipes(session:Session = Depends(get_session), authorization:
     user_id = await verify_user(authorization)
 
     recipes = session.exec(
-        select(RecipeModel).join(MealModel).where(MealModel.user_id == user_id)
+        select(RecipeModel)
+        .join(MealRecipeLink, MealRecipeLink.recipe_id == RecipeModel.id)
+        .join(MealModel, MealRecipeLink.meal_id == MealModel.id)
+        .where(MealModel.user_id == user_id)
     ).all()
-
+    
     return recipes
 
 
@@ -206,8 +213,11 @@ async def update_recipe(meal_id: int, recipe_id: int, data: UpdateRecipe, sessio
 
 
     recipe = session.get(RecipeModel, recipe_id)
-    if not recipe or recipe.meal_id != meal_id or recipe.meal.user_id != user_id:
+    if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    if not any(meal.id == meal_id and meal.user_id == user_id for meal in recipe.meals):
+        raise HTTPException(status_code=404, detail="Recipe not linked to this meal or not yours")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(recipe, field, value)
@@ -226,12 +236,24 @@ async def delete_recipe(meal_id: int, recipe_id: int,session: Session = Depends(
     user_id = await verify_user(authorization)
 
     recipe = session.get(RecipeModel,recipe_id)
-    if not recipe or recipe.meal_id != meal_id or recipe.meal.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Recipe not found or not yours")
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    if not any(meal.id == meal_id and meal.user_id == user_id for meal in recipe.meals):
+        raise HTTPException(status_code=404, detail="Recipe not linked to this meal or not yours")
     
-    session.delete(recipe)
+    #remove link to this meal first
+    link = session.exec(
+        select(MealRecipeLink).where(MealRecipeLink.recipe_id==recipe.id, MealRecipeLink.meal_id==meal_id)
+    ).first()
+    if link:
+        session.delete(link)
+
+    #delete recipe entirely if no more links
+    if not recipe.meals or len(recipe.meals) == 0:
+        session.delete(recipe)
+
     session.commit()
-
     return None
-
 
