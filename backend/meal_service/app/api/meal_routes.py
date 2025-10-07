@@ -160,6 +160,7 @@ async def create_recipe_for_meal(meal_id:int, recipe:CreateRecipe, session: Sess
 
         user_id=user_id,
         title=recipe.title,
+        ingredients=recipe.ingredients,
         instructions=recipe.instructions,
         calories = recipe.calories
 
@@ -190,6 +191,7 @@ async def create_recipe_for_user(recipe:CreateRecipe, session: Session = Depends
         
         user_id=user_id,
         title=recipe.title,
+        ingredients=recipe.ingredients,
         instructions=recipe.instructions,
         calories = recipe.calories
 
