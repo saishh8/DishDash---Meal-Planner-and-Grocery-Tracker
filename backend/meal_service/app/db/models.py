@@ -1,10 +1,28 @@
-from sqlmodel import SQLModel,Field,Relationship,DateTime
+from sqlmodel import SQLModel,Field,Relationship,DateTime,Column,JSON
+from enum import Enum
 from typing import List, Optional
 from datetime import datetime,timezone
 
 
 def get_utc_now():
     return datetime.now(timezone.utc)
+
+#HELPERS
+
+class UnitEnum(str, Enum):
+    gram = "gm"
+    kilogram = "kg"
+    milliliter = "ml"
+    liter = "l"
+    teaspoon = "tsp"
+    tablespoon = "tbsp"
+    cup = "cup"
+    piece = "pcs"
+
+class Ingredient(SQLModel):
+    name: str
+    quantity: float
+    unit: UnitEnum  #validated enum
 
 
 
@@ -34,6 +52,7 @@ class RecipeModel(SQLModel, table = True):
     user_id: int
 
     title: str
+    ingredients: Optional[list[Ingredient]] = Field(default=None, sa_column=Column(JSON))
     instructions: Optional[str] = None
     calories: Optional[float] = None
 
@@ -45,6 +64,8 @@ class RecipeModel(SQLModel, table = True):
 
 
 
+
+
 ##SCHEMAS
 
 class CreateMeal(SQLModel):
@@ -53,12 +74,14 @@ class CreateMeal(SQLModel):
    
     name: str
     date: Optional[datetime] = None
+    
 
 
 class CreateRecipe(SQLModel):
 
     
     title: str
+    ingredients: Optional[list[Ingredient]] = None
     instructions: Optional[str] = None
     calories: Optional[float] = None
     meal_ids: Optional[List[int]] = None  # new field for linking to meals
@@ -73,6 +96,7 @@ class UpdateMeal(SQLModel):
 class UpdateRecipe(SQLModel):
 
     title: Optional[str] = None
+    ingredients: Optional[list[Ingredient]] = None
     instructions: Optional[str] = None
     calories: Optional[float] = None
     meal_ids: Optional[List[int]] = None  # optional updated meal links
@@ -82,6 +106,7 @@ class GetRecipe(SQLModel):
     id: int
     user_id:int
     title: str
+    ingredients: Optional[list[Ingredient]] = None
     instructions: Optional[str] = None
     calories: Optional[float] = None
     meals: Optional[List[int]] = None  # list of meal IDs
@@ -94,6 +119,7 @@ class GetRecipe(SQLModel):
             id = recipe.id,
             user_id = recipe.user_id,
             title = recipe.title,
+            ingredients = recipe.ingredients,
             instructions = recipe.instructions,
             calories = recipe.calories,
             meals = [meal.id for meal in recipe.meals],
